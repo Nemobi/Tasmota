@@ -145,9 +145,7 @@ struct PICSTORE {
 };
 
 #ifdef ENABLE_RTSPSERVER
-#include <OV2640.h>
-#include <SimStreamer.h>
-#include <OV2640Streamer.h>
+#include <CStreamer.h>
 #include <CRtspSession.h>
 #ifndef RTSP_FRAME_TIME
 #define RTSP_FRAME_TIME 100
@@ -168,7 +166,6 @@ struct {
   CRtspSession *rtsp_session;
   WiFiClient rtsp_client;
   uint8_t rtsp_start;
-  OV2640 cam;
   uint32_t rtsp_lastframe_time;
 #endif // ENABLE_RTSPSERVER
 } Wc;
@@ -864,7 +861,6 @@ void HandleWebcamMjpegTask(void) {
   size_t _jpg_buf_len = 0;
   uint8_t * _jpg_buf = NULL;
 
-  //WiFiClient client = CamServer->client();
   uint32_t tlen;
   bool jpeg_converted = false;
 
@@ -1014,12 +1010,14 @@ void WcLoop(void) {
 
         uint32_t now = millis();
         if ((now-Wc.rtsp_lastframe_time) > RTSP_FRAME_TIME) {
-            Wc.rtsp_session->broadcastCurrentFrame(now);
+		camera_fb_t* fb = esp_camera_fb_get();
+            	Wc.rtsp_session->broadcastCurrentFrame(now, fb);
+		esp_camera_fb_return(fb);
             Wc.rtsp_lastframe_time = now;
           //  AddLog(LOG_LEVEL_INFO, PSTR("CAM: RTSP session frame"));
         }
 
-        if (Wc.rtsp_session->m_stopped) {
+        if (Wc.rtsp_session->m_isStopped) {
             delete Wc.rtsp_session;
             delete Wc.rtsp_streamer;
             Wc.rtsp_session = NULL;
@@ -1030,7 +1028,7 @@ void WcLoop(void) {
       else {
         Wc.rtsp_client = Wc.rtspp->accept();
         if (Wc.rtsp_client) {
-            Wc.rtsp_streamer = new OV2640Streamer(&Wc.rtsp_client, Wc.cam);        // our streamer for UDP/TCP based RTP transport
+            Wc.rtsp_streamer = new CStreamer(&Wc.rtsp_client, Wc.width, Wc.height);        // our streamer for UDP/TCP based RTP transport
             Wc.rtsp_session = new CRtspSession(&Wc.rtsp_client, Wc.rtsp_streamer); // our threads RTSP session and state
             AddLog(LOG_LEVEL_INFO, PSTR("CAM: RTSP stream created"));
         }

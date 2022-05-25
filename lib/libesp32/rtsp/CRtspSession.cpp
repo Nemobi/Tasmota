@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <time.h>
 
-CRtspSession::CRtspSession(SOCKET aRtspClient, CStreamer * aStreamer) : m_RtspClient(aRtspClient),m_Streamer(aStreamer)
+CRtspSession::CRtspSession(SOCKET aRtspClient, CStreamer * aStreamer) 
+	: m_RtspClient(aRtspClient),m_Streamer(aStreamer)
 {
     printf("Creating RTSP session\n");
     Init();
@@ -13,8 +14,8 @@ CRtspSession::CRtspSession(SOCKET aRtspClient, CStreamer * aStreamer) : m_RtspCl
     m_ClientRTPPort  =  0;
     m_ClientRTCPPort =  0;
     m_TcpTransport   =  false;
-    m_streaming = false;
-    m_stopped = false;
+    m_isStreaming = false;
+    m_isStopped = false;
 };
 
 CRtspSession::~CRtspSession()
@@ -372,7 +373,7 @@ int CRtspSession::GetStreamID()
  */
 bool CRtspSession::handleRequests(uint32_t readTimeoutMs)
 {
-    if(m_stopped)
+    if(m_isStopped)
         return false; // Already closed down
 
     //char RecvBuf[RTSP_BUFFER_SIZE];   // Note: we assume single threaded, this large buf we keep off of the tiny stack
@@ -385,15 +386,15 @@ bool CRtspSession::handleRequests(uint32_t readTimeoutMs)
         {
             RTSP_CMD_TYPES C = Handle_RtspRequest(RecvBuf,res);
             if (C == RTSP_PLAY)
-                m_streaming = true;
+                m_isStreaming = true;
             else if (C == RTSP_TEARDOWN)
-                m_stopped = true;
+                m_isStopped = true;
         }
         return true;
     }
     else if(res == 0) {
         printf("client closed socket, exiting\n");
-        m_stopped = true;
+        m_isStopped = true;
         return true;
     }
     else  {
@@ -403,10 +404,11 @@ bool CRtspSession::handleRequests(uint32_t readTimeoutMs)
     }
 }
 
-void CRtspSession::broadcastCurrentFrame(uint32_t curMsec) {
-    // Send a frame
-    if (m_streaming && !m_stopped) {
-        // printf("serving a frame\n");
-        m_Streamer->streamImage(curMsec);
-    }
+void CRtspSession::broadcastCurrentFrame(uint32_t curMsec, camera_fb_t *fb) {
+	//N m_Streamer is CStreamer
+	// Send a frame
+    	if (m_isStreaming && !m_isStopped) {
+        	// printf("serving a frame\n");
+        	m_Streamer->streamImage(curMsec,fb);
+	}
 }

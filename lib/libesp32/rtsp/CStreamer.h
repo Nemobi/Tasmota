@@ -1,7 +1,7 @@
 #pragma once
 
-#include "platglue.h"
-
+#include "platglue-esp32.h"
+#include <esp_camera.h>
 typedef unsigned const char *BufPtr;
 
 class CStreamer
@@ -14,7 +14,7 @@ public:
     u_short GetRtpServerPort();
     u_short GetRtcpServerPort();
 
-    virtual void    streamImage(uint32_t curMsec) = 0; // send a new image to the client
+    void    streamImage(uint32_t curMsec, camera_fb_t *fb); // send a new image to the client
 protected:
 
     void    streamFrame(unsigned const char *data, uint32_t dataLen, uint32_t curMsec);

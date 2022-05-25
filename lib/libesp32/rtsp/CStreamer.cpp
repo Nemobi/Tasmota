@@ -1,6 +1,7 @@
 #include "CStreamer.h"
 
 #include <stdio.h>
+#include <esp_camera.h>
 
 //#define STREAM_DEBUG
 
@@ -24,6 +25,12 @@ CStreamer::CStreamer(SOCKET aClient, u_short width, u_short height) : m_Client(a
     m_height = height;
     m_prevMsec = 0;
 };
+
+void CStreamer::streamImage(uint32_t curMsec, camera_fb_t *fb){
+	size_t size = fb->len;	
+	BufPtr bytes = fb->buf;
+	streamFrame(bytes, size, curMsec);
+}
 
 CStreamer::~CStreamer()
 {
@@ -178,10 +185,8 @@ void CStreamer::streamFrame(unsigned const char *data, uint32_t dataLen, uint32_
     BufPtr qtable0, qtable1;
 
     if (!decodeJPEGfile(&data, &dataLen, &qtable0, &qtable1)) {
-#ifdef STREAM_DEBUG
-        printf("can't decode jpeg data\n");
-#endif
-        return;
+	    //Failed to decode JPEG
+	    return;
     }
 
     int offset = 0;
@@ -191,17 +196,12 @@ void CStreamer::streamFrame(unsigned const char *data, uint32_t dataLen, uint32_
 
     // Increment ONLY after a full frame
     uint32_t units = 90000; // Hz per RFC 2435
-    m_Timestamp += (units * deltams / 1000);                             // fixed timestamp increment for a frame rate of 25fps
+    m_Timestamp += (units * deltams / 1000);   // fixed timestamp increment for a frame rate of 25fps
 
     m_SendIdx++;
     if (m_SendIdx > 1) m_SendIdx = 0;
-
-#ifdef STREAM_DEBUG
-    printf("frame sent\n");
-#endif
 };
 
-#include <assert.h>
 
 // search for a particular JPEG marker, moves *start to just after that marker
 // This function fixes up the provided start ptr to point to the

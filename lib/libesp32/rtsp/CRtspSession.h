@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CStreamer.h"
-#include "platglue.h"
+#include "platglue-esp32.h"
 
 // supported command types
 enum RTSP_CMD_TYPES
@@ -27,20 +27,17 @@ public:
     RTSP_CMD_TYPES Handle_RtspRequest(char const * aRequest, unsigned aRequestSize);
     int            GetStreamID();
 
-    /**
-       Read from our socket, parsing commands as possible.
-
-       return false if the read timed out
-     */
+    /// Read from our socket, parsing commands as possible.
+    /// return false if the read timed out
     bool handleRequests(uint32_t readTimeoutMs);
 
     /**
-       broadcast a current frame
-     */
-    void broadcastCurrentFrame(uint32_t curMsec);
+    Broadcast a current frame
+    **/
+    void broadcastCurrentFrame(uint32_t curMsec, camera_fb_t *fb);
 
-    bool m_streaming;
-    bool m_stopped;
+    bool m_isStreaming;
+    bool m_isStopped;
 
 private:
     void Init();
@@ -56,11 +53,11 @@ private:
     // global session state parameters
     int m_RtspSessionID;
     SOCKET m_RtspClient;                                      // RTSP socket of that session
-    int m_StreamID;                                           // number of simulated stream of that session
-    IPPORT m_ClientRTPPort;                                  // client port for UDP based RTP transport
-    IPPORT m_ClientRTCPPort;                                 // client port for UDP based RTCP transport
-    bool m_TcpTransport;                                      // if Tcp based streaming was activated
-    CStreamer    * m_Streamer;                                // the UDP or TCP streamer of that session
+    int m_StreamID;                          // number of simulated stream of that session
+    IPPORT m_ClientRTPPort;                   // client port for UDP based RTP transport
+    IPPORT m_ClientRTCPPort;                     // client port for UDP based RTCP transport
+    bool m_TcpTransport;               		// if Tcp based streaming was activated
+    CStreamer *m_Streamer;                     // the UDP or TCP streamer of that session
 
     // parameters of the last received RTSP request
 
